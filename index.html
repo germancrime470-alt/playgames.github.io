@@ -2,296 +2,674 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Telegram Mini App</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Шахтёрская удача — копай, добывай, улучшай!</title>
     <style>
         * {
-            margin: 0;
-            padding: 0;
+            user-select: none;
             box-sizing: border-box;
         }
 
         body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            padding: 20px;
+            background: linear-gradient(145deg, #1e2a2a 0%, #0f1a1a 100%);
             min-height: 100vh;
-            transition: background-color 0.2s, color 0.2s;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .card {
-            background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
-            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Press Start 2P', 'Courier New', monospace;
             padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            transition: background-color 0.2s;
+            margin: 0;
         }
 
-        h1 {
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
+        /* Игровой контейнер */
+        .game-container {
+            max-width: 1300px;
+            width: 100%;
+            background: #2c2118c9;
+            backdrop-filter: blur(3px);
+            border-radius: 2.5rem;
+            padding: 1.2rem;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,100,0.1);
+            border: 1px solid #d4a37366;
         }
 
-        .user-info {
+        /* Верхняя информационная панель */
+        .stats-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 12px;
+            background: #1f2a1bc9;
+            padding: 12px 20px;
+            border-radius: 2rem;
+            margin-bottom: 1.5rem;
+            font-weight: bold;
+            font-size: 1.2rem;
+            backdrop-filter: blur(4px);
+            border: 1px solid #e9b35f;
+        }
+
+        .stat-card {
+            background: #00000066;
+            padding: 5px 15px;
+            border-radius: 2rem;
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
+            gap: 10px;
+            color: #ffefcf;
+            text-shadow: 0 2px 2px black;
         }
 
-        .avatar-placeholder {
-            width: 60px;
-            height: 60px;
-            background-color: var(--tg-theme-button-color, #3390ec);
-            border-radius: 50%;
+        .stat-card span:first-child {
+            font-size: 1.3rem;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #f7d44a;
+            font-size: 1.4rem;
+        }
+
+        /* Две колонки: шахта + магазин */
+        .game-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .mine-area {
+            flex: 2;
+            min-width: 280px;
+        }
+
+        .shop-area {
+            flex: 1.2;
+            min-width: 240px;
+            background: #1e2b1ce6;
+            border-radius: 1.8rem;
+            padding: 1rem;
+            backdrop-filter: blur(5px);
+            border: 1px solid #c9a87b;
+        }
+
+        /* Сетка шахты */
+        .mine-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            background: #3b2a1f80;
+            padding: 15px;
+            border-radius: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            aspect-ratio: 1 / 1;
+            background: radial-gradient(circle at 30% 25%, #5d4a34, #2f2419);
+            border-radius: 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
-            color: white;
-            font-weight: bold;
-        }
-
-        .details {
-            flex: 1;
-        }
-
-        .detail-row {
-            margin: 8px 0;
-            font-size: 0.95rem;
-        }
-
-        .detail-label {
-            font-weight: 500;
-            color: var(--tg-theme-hint-color, #888888);
-        }
-
-        .button {
-            background-color: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 500;
+            font-size: 2rem;
             cursor: pointer;
-            transition: opacity 0.2s, transform 0.1s;
-            width: 100%;
+            transition: 0.1s linear;
+            box-shadow: inset 0 -3px 0 #1c140e, 0 5px 10px black;
+            font-weight: bold;
+            color: #fff2cf;
+        }
+
+        .cell:active {
+            transform: scale(0.96);
+        }
+
+        .cell.disabled {
+            filter: grayscale(0.6);
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+        /* Уровень шахты */
+        .depth-level {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            background: #00000077;
+            padding: 8px 16px;
+            border-radius: 2rem;
             margin-top: 10px;
         }
 
-        .button:active {
-            transform: scale(0.98);
+        .level-badge {
+            background: #ca6f2e;
+            padding: 4px 14px;
+            border-radius: 2rem;
+            color: #ffefb9;
         }
 
-        .button-secondary {
-            background-color: transparent;
-            border: 1px solid var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-color, #3390ec);
-            margin-top: 8px;
+        /* Стили магазина */
+        .upgrade-item {
+            background: #2c2b1dcc;
+            margin: 12px 0;
+            padding: 10px;
+            border-radius: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-left: 5px solid #ffb347;
         }
 
-        .status {
-            margin-top: 15px;
-            padding: 12px;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            border-radius: 12px;
+        .upgrade-info {
             font-size: 0.85rem;
-            border-left: 3px solid var(--tg-theme-button-color, #3390ec);
+            flex: 1;
         }
 
-        .theme-badge {
-            display: inline-block;
-            background-color: var(--tg-theme-hint-color, #ccc);
-            color: var(--tg-theme-bg-color, #fff);
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            margin-left: 8px;
+        .upgrade-name {
+            font-weight: bold;
+            color: #ffd966;
         }
 
-        footer {
+        button {
+            background: #e67e22;
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 6px 14px;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: 0.1s;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+
+        button:active {
+            transform: scale(0.96);
+        }
+
+        button:disabled {
+            background: #6c4f2e;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .reward-log {
+            font-size: 0.75rem;
+            background: #0a0f05b3;
+            margin-top: 15px;
+            padding: 8px;
+            border-radius: 1rem;
+            height: 100px;
+            overflow-y: auto;
+            color: #bebc86;
+        }
+
+        h3 {
+            margin: 0 0 12px 0;
+            color: #ffcf9a;
             text-align: center;
-            font-size: 0.7rem;
-            color: var(--tg-theme-hint-color, #888);
-            margin-top: 30px;
+            border-bottom: 2px dashed #c9843b;
+            display: inline-block;
+            width: 100%;
+        }
+
+        @media (max-width: 760px) {
+            .mine-grid {
+                gap: 6px;
+            }
+            .cell {
+                font-size: 1.5rem;
+            }
+            .stat-card {
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <h1>🌟 Mini App</h1>
-            <p>Добро пожаловать в Telegram Web App!</p>
-        </div>
-
-        <div class="card" id="userCard">
-            <div class="user-info">
-                <div class="avatar-placeholder" id="avatar">👤</div>
-                <div class="details">
-                    <div class="detail-row">
-                        <span class="detail-label">Имя:</span> <span id="userName">Загрузка...</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">ID:</span> <span id="userId">—</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Тема:</span> <span id="themeName">—</span>
-                        <span class="theme-badge" id="themeBadge"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>⚡ Действия</h3>
-            <button class="button" id="sendEventBtn">Отправить событие боту</button>
-            <button class="button button-secondary" id="closeAppBtn">Закрыть приложение</button>
-            <button class="button button-secondary" id="triggerHapticBtn">Виброотклик</button>
-        </div>
-
-        <div class="card" id="statusCard">
-            <div class="status" id="statusMessage">
-                💡 Приложение готово к работе
-            </div>
-        </div>
-
-        <footer>
-            Powered by Telegram WebApp SDK
-        </footer>
+<div class="game-container">
+    <!-- Статистика игрока -->
+    <div class="stats-panel">
+        <div class="stat-card">⛏️ Уровень: <span class="stat-value" id="playerLevel">1</span></div>
+        <div class="stat-card">✨ Опыт: <span class="stat-value" id="playerXP">0</span> / <span id="nextXP">100</span></div>
+        <div class="stat-card">🪙 Монеты: <span class="stat-value" id="coins">100</span></div>
+        <div class="stat-card">⚡ Энергия: <span class="stat-value" id="energy">100</span> / <span id="maxEnergy">100</span></div>
     </div>
 
-    <script>
-        // Инициализация Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        
-        // Расширяем на весь экран и показываем главную кнопку
-        tg.expand();
-        tg.ready();
+    <div class="game-layout">
+        <!-- Шахта -->
+        <div class="mine-area">
+            <div class="mine-grid" id="mineGrid"></div>
+            <div class="depth-level">
+                <span>🏔️ Слой шахты: <strong id="mineLevelName">🌱 Начальный</strong></span>
+                <span class="level-badge" id="depthReqInfo">🔓 След. слой: ур. 5</span>
+            </div>
+            <div class="reward-log" id="logPanel">
+                💬 Добро пожаловать, шахтёр! Копай клетки и зарабатывай монеты.<br>
+                📈 Повышай уровень, открывай новые слои и улучшения!
+            </div>
+        </div>
 
-        // Настройка главной кнопки (внизу экрана Telegram)
-        tg.MainButton.setText("Подтвердить действие");
-        tg.MainButton.show();
-        tg.MainButton.onClick(() => {
-            sendToBot({ action: "main_button_click", timestamp: Date.now() });
-            showStatus("✅ Главная кнопка нажата! Данные отправлены боту.");
-            tg.HapticFeedback.impactOccurred("medium");
-        });
+        <!-- Магазин / улучшения -->
+        <div class="shop-area">
+            <h3>🏪 Лавка гнома</h3>
+            <div class="upgrade-item">
+                <div class="upgrade-info">
+                    <div class="upgrade-name">⛏️ Стальная кирка</div>
+                    <div>💰 +10% к ценности руды</div>
+                </div>
+                <button id="buyPickUpgrade">50💰</button>
+            </div>
+            <div class="upgrade-item">
+                <div class="upgrade-info">
+                    <div class="upgrade-name">🍞 Фляга с эликсиром</div>
+                    <div>➕ макс. энергия +15, восст. 15</div>
+                </div>
+                <button id="buyEnergyUpgrade">80💰</button>
+            </div>
+            <div class="upgrade-item">
+                <div class="upgrade-info">
+                    <div class="upgrade-name">🧲 Магнитный амулет</div>
+                    <div>✨ шанс двойной руды +20%</div>
+                </div>
+                <button id="buyDoubleUpgrade">120💰</button>
+            </div>
+            <div class="upgrade-item">
+                <div class="upgrade-info">
+                    <div class="upgrade-name">🔋 Восстановить энергию</div>
+                    <div>⚡ полное восстановление</div>
+                </div>
+                <button id="refillEnergyBtn">30💰</button>
+            </div>
+            <div style="margin-top: 12px; text-align: center; font-size: 11px; color:#c2a070">
+                🧨 Каждая клетка — удар киркой (-5⚡)
+            </div>
+        </div>
+    </div>
+</div>
 
-        // Элементы DOM
-        const userNameSpan = document.getElementById('userName');
-        const userIdSpan = document.getElementById('userId');
-        const themeNameSpan = document.getElementById('themeName');
-        const themeBadge = document.getElementById('themeBadge');
-        const sendEventBtn = document.getElementById('sendEventBtn');
-        const closeAppBtn = document.getElementById('closeAppBtn');
-        const triggerHapticBtn = document.getElementById('triggerHapticBtn');
-        const statusDiv = document.getElementById('statusMessage');
+<script>
+    // ------------------- ИГРОВОЙ ДВИЖОК -------------------
+    // Сохранение в localStorage
+    let gameState = {
+        level: 1,           // уровень игрока
+        xp: 0,
+        coins: 100,
+        energy: 100,
+        maxEnergy: 100,
+        pickUpgrade: 0,     // количество улучшений кирки (0-5) +5% за уровень
+        energyUpgrade: 0,   // улучшение макс энергии (каждый +10 макс)
+        doubleChanceUpgrade: 0, // шанс двойной руды (каждый +10% старт 0)
+        mineTier: 1         // 1 - начальный, 2 - глубокая, 3 - магматическая, 4 - легендарная
+    };
 
-        // Функция отображения статуса
-        function showStatus(msg) {
-            statusDiv.innerHTML = `📌 ${msg}`;
-            // Вибрация при новом статусе (лёгкая)
-            tg.HapticFeedback.notificationOccurred("success");
-        }
+    // Стоимости улучшений (базовые)
+    const PICK_PRICE = 50;
+    const ENERGY_CAP_PRICE = 80;
+    const DOUBLE_PRICE = 120;
+    const REFILL_PRICE = 30;
 
-        // Отправка данных боту через sendData
-        function sendToBot(data) {
+    // Пороги открытия слоёв шахты
+    const TIER_UNLOCK = {
+        1: 1,    // уровень игрока 1+
+        2: 5,    // открывается на 5 уровне
+        3: 12,
+        4: 20
+    };
+
+    // Данные о ресурсах для каждого слоя (шанс выпадения + базовая цена)
+    // Формат: [ {название, emoji, мин монет, макс монет, вес}, ... ]
+    const TIER_RESOURCES = {
+        1: [ // начальный слой (глина, уголь, медь)
+            { name: "Глина", emoji: "🧱", minCoin: 2, maxCoin: 6, weight: 40 },
+            { name: "Уголь", emoji: "⚫", minCoin: 4, maxCoin: 10, weight: 35 },
+            { name: "Медь", emoji: "🟤", minCoin: 8, maxCoin: 18, weight: 20 },
+            { name: "Серебро", emoji: "⚪", minCoin: 15, maxCoin: 30, weight: 5 }
+        ],
+        2: [ // Глубокая шахта
+            { name: "Уголь", emoji: "⚫", minCoin: 6, maxCoin: 14, weight: 30 },
+            { name: "Железо", emoji: "🔩", minCoin: 12, maxCoin: 24, weight: 35 },
+            { name: "Золото", emoji: "🌟", minCoin: 25, maxCoin: 55, weight: 25 },
+            { name: "Платина", emoji: "💎", minCoin: 45, maxCoin: 85, weight: 10 }
+        ],
+        3: [ // Магматический слой
+            { name: "Мифрил", emoji: "🌀", minCoin: 30, maxCoin: 70, weight: 40 },
+            { name: "Рубин", emoji: "🔴", minCoin: 55, maxCoin: 110, weight: 30 },
+            { name: "Сапфир", emoji: "🔵", minCoin: 70, maxCoin: 150, weight: 20 },
+            { name: "Драконий камень", emoji: "🐉", minCoin: 150, maxCoin: 300, weight: 10 }
+        ],
+        4: [ // Легендарная жила
+            { name: "Адамантит", emoji: "⚜️", minCoin: 100, maxCoin: 200, weight: 45 },
+            { name: "Звездный осколок", emoji: "✨", minCoin: 180, maxCoin: 350, weight: 30 },
+            { name: "Кристалл душ", emoji: "💜", minCoin: 300, maxCoin: 600, weight: 20 },
+            { name: "Сердце горы", emoji: "🏔️🔥", minCoin: 600, maxCoin: 1200, weight: 5 }
+        ]
+    };
+
+    // Бонус от кирки (каждый уровень кирки +10% цены, максимум +50%)
+    function getValueBonus() {
+        return 1 + (gameState.pickUpgrade * 0.1);
+    }
+
+    // Шанс двойной добычи
+    function getDoubleChance() {
+        return gameState.doubleChanceUpgrade * 0.1;  // 0.1 = 10% за уровень, макс 50%
+    }
+
+    // максимальный уровень улучшений (ограничим 5)
+    const MAX_UPGRADE_LEVEL = 5;
+
+    // Сохранение и загрузка из localStorage
+    function saveGame() {
+        localStorage.setItem('minerGame', JSON.stringify(gameState));
+    }
+
+    function loadGame() {
+        const saved = localStorage.getItem('minerGame');
+        if (saved) {
             try {
-                const jsonString = JSON.stringify(data);
-                tg.sendData(jsonString);
-                console.log("Отправлено боту:", jsonString);
-            } catch (err) {
-                console.error("Ошибка отправки:", err);
-                showStatus("Ошибка отправки. Возможно, бот не ожидает данные.");
+                const data = JSON.parse(saved);
+                Object.assign(gameState, data);
+                // валидация: обновить maxEnergy на основе энергетических улучшений
+                if (gameState.energyUpgrade === undefined) gameState.energyUpgrade = 0;
+                const calculatedMax = 100 + (gameState.energyUpgrade * 15);
+                gameState.maxEnergy = calculatedMax;
+                if (gameState.energy > gameState.maxEnergy) gameState.energy = gameState.maxEnergy;
+                if (gameState.pickUpgrade === undefined) gameState.pickUpgrade = 0;
+                if (gameState.doubleChanceUpgrade === undefined) gameState.doubleChanceUpgrade = 0;
+                if (gameState.mineTier === undefined) gameState.mineTier = 1;
+            } catch(e) {}
+        }
+        // гарантия значений по умолчанию
+        if (!gameState.mineTier) gameState.mineTier = 1;
+        if (!gameState.pickUpgrade) gameState.pickUpgrade = 0;
+        if (!gameState.energyUpgrade) gameState.energyUpgrade = 0;
+        if (!gameState.doubleChanceUpgrade) gameState.doubleChanceUpgrade = 0;
+        gameState.maxEnergy = 100 + (gameState.energyUpgrade * 15);
+        if (gameState.energy > gameState.maxEnergy) gameState.energy = gameState.maxEnergy;
+        if (gameState.energy < 0) gameState.energy = 0;
+        if (!gameState.coins && gameState.coins !== 0) gameState.coins = 100;
+        if (!gameState.level) gameState.level = 1;
+        if (!gameState.xp) gameState.xp = 0;
+        // обновление tier на основе уровня игрока (синхронизация)
+        updateMineTierByLevel();
+    }
+
+    // Обновление допустимого слоя шахты по уровню игрока
+    function updateMineTierByLevel() {
+        let newTier = 1;
+        if (gameState.level >= TIER_UNLOCK[4]) newTier = 4;
+        else if (gameState.level >= TIER_UNLOCK[3]) newTier = 3;
+        else if (gameState.level >= TIER_UNLOCK[2]) newTier = 2;
+        else newTier = 1;
+        if (gameState.mineTier < newTier) gameState.mineTier = newTier;
+        // не понижаем слой, если апнули уровень, но остаёмся на достигнутом максимуме
+        if (gameState.mineTier > newTier && gameState.mineTier <= 4) {} // оставляем как есть (не понижаем)
+        if (gameState.mineTier > 4) gameState.mineTier = 4;
+    }
+
+    // Получить случайную руду по текущему слою с весами
+    function getRandomOre() {
+        const resources = TIER_RESOURCES[gameState.mineTier];
+        if (!resources) return { name: "Камень", emoji: "🪨", coinValue: 1 };
+        let totalWeight = 0;
+        for (let r of resources) totalWeight += r.weight;
+        let rand = Math.random() * totalWeight;
+        let accum = 0;
+        for (let r of resources) {
+            accum += r.weight;
+            if (rand <= accum) {
+                let baseVal = Math.floor(Math.random() * (r.maxCoin - r.minCoin + 1) + r.minCoin);
+                let bonus = getValueBonus();
+                let finalVal = Math.floor(baseVal * bonus);
+                return {
+                    name: r.name,
+                    emoji: r.emoji,
+                    coinValue: finalVal,
+                    baseName: r.name
+                };
             }
         }
+        return { name: "Песчаник", emoji: "🪨", coinValue: 2 };
+    }
 
-        // Получаем данные пользователя из Telegram
-        let user = tg.initDataUnsafe?.user;
-        let themeParams = tg.themeParams;
-
-        // Заполняем информацию о пользователе
-        if (user) {
-            let firstName = user.first_name || '';
-            let lastName = user.last_name || '';
-            let fullName = `${firstName} ${lastName}`.trim() || 'Без имени';
-            let userId = user.id || 'неизвестно';
-            userNameSpan.textContent = fullName;
-            userIdSpan.textContent = userId;
-            // Создаём аватар — первая буква имени
-            const avatarLetter = fullName.charAt(0).toUpperCase() || '👤';
-            document.getElementById('avatar').innerHTML = avatarLetter;
-        } else {
-            userNameSpan.textContent = 'Тестовый режим (вне Telegram)';
-            userIdSpan.textContent = '—';
-            document.getElementById('avatar').innerHTML = '🧪';
-            showStatus('⚠️ Запуск вне Telegram. Некоторые функции могут работать не полностью.');
+    // Логика копания (клик по клетке)
+    function mineCell(cellIndex) {
+        // проверка энергии
+        if (gameState.energy < 5) {
+            addLogMessage("😫 Недостаточно энергии! Купи восстановление или подожди... (тратится 5 ед.)");
+            return false;
         }
-
-        // Определение текущей темы (светлая/тёмная)
-        const isDark = tg.colorScheme === 'dark';
-        themeNameSpan.textContent = tg.colorScheme === 'dark' ? 'Тёмная' : 'Светлая';
-        themeBadge.textContent = tg.colorScheme === 'dark' ? '🌙' : '☀️';
+        // списываем энергию
+        gameState.energy -= 5;
+        if (gameState.energy < 0) gameState.energy = 0;
         
-        // Применяем CSS переменные из темы Telegram (они уже применены через var(--tg-theme-*))
-        // Дополнительно можно записать в корень документа
-        const root = document.documentElement;
-        root.style.setProperty('--tg-theme-bg-color', themeParams.bg_color || '#ffffff');
-        root.style.setProperty('--tg-theme-text-color', themeParams.text_color || '#000000');
-        root.style.setProperty('--tg-theme-hint-color', themeParams.hint_color || '#999999');
-        root.style.setProperty('--tg-theme-link-color', themeParams.link_color || '#3390ec');
-        root.style.setProperty('--tg-theme-button-color', themeParams.button_color || '#3390ec');
-        root.style.setProperty('--tg-theme-button-text-color', themeParams.button_text_color || '#ffffff');
-        root.style.setProperty('--tg-theme-secondary-bg-color', themeParams.secondary_bg_color || '#f0f0f0');
+        // получаем руду
+        let ore = getRandomOre();
+        let earnedCoins = ore.coinValue;
         
-        // Обработчик кнопки "Отправить событие боту"
-        sendEventBtn.addEventListener('click', () => {
-            const eventData = {
-                type: "user_action",
-                action: "button_click",
-                button: "send_event",
-                user_id: user?.id || null,
-                timestamp: Date.now(),
-                custom: "Привет из мини-приложения!"
-            };
-            sendToBot(eventData);
-            showStatus("Событие отправлено боту! Проверьте консоль или ответ бота.");
-            tg.HapticFeedback.impactOccurred("light");
-        });
-
-        // Закрыть приложение
-        closeAppBtn.addEventListener('click', () => {
-            tg.HapticFeedback.impactOccurred("heavy");
-            tg.close();
-        });
-
-        // Виброотклик
-        triggerHapticBtn.addEventListener('click', () => {
-            tg.HapticFeedback.impactOccurred("rigid");
-            showStatus("Виброотклик (impact rigid)");
-        });
-
-        // Дополнительная настройка: показываем приветствие
-        showStatus(`Приложение загружено. Платформа: ${tg.platform || 'unknown'}`);
-
-        // Если приложение свёрнуто/развёрнуто, можно отловить событие
-        tg.onEvent('viewportChanged', () => {
-            console.log("Viewport changed");
-        });
-
-        // Уведомляем, что всё готово
-        console.log("Telegram Web App инициализирован", tg.initDataUnsafe);
-    </script>
+        // шанс двойной добычи
+        let doubleChance = getDoubleChance();
+        let isDouble = false;
+        if (Math.random() < doubleChance) {
+            earnedCoins *= 2;
+            isDouble = true;
+        }
+        
+        // начисление монет
+        gameState.coins += earnedCoins;
+        
+        // опыт за добычу (от 5 до 20 + бонус за слой)
+        let xpGain = 5 + Math.floor(earnedCoins / 15) + (gameState.mineTier * 2);
+        if (xpGain < 4) xpGain = 6;
+        gameState.xp += xpGain;
+        
+        // сообщение в лог
+        let doubleText = isDouble ? "✨✨ ДВОЙНАЯ ДОБЫЧА! ✨✨" : "";
+        addLogMessage(`⛏️ Клетка ${cellIndex+1}: найдено ${ore.emoji} ${ore.name} +${earnedCoins}💰 +${xpGain} опыта. ${doubleText}`);
+        
+        // Проверка повышения уровня
+        let leveledUp = false;
+        let requiredXP = getXPNeeded(gameState.level);
+        while (gameState.xp >= requiredXP && gameState.level < 30) {
+            gameState.xp -= requiredXP;
+            gameState.level++;
+            leveledUp = true;
+            requiredXP = getXPNeeded(gameState.level);
+            // награда за уровень: +20 монет, +10 энергии
+            gameState.coins += 20;
+            gameState.energy = Math.min(gameState.energy + 15, gameState.maxEnergy);
+            addLogMessage(`🎉 ПОЗДРАВЛЯЮ! Уровень ${gameState.level}! +20💰 +15⚡`);
+            // при повышении уровня проверяем открытие новых слоёв
+            updateMineTierByLevel();
+        }
+        if (leveledUp) {
+            addLogMessage(`🏆 Новый уровень шахты: ${getMineTierName()} открыт!`);
+        }
+        
+        // анимация: обновляем UI
+        updateUI();
+        saveGame();
+        
+        // эффект клика — дополнительно подсветка (обновление сетки)
+        animateCellClick(cellIndex);
+        return true;
+    }
+    
+    function getXPNeeded(level) {
+        return 50 + Math.floor(level * 7);
+    }
+    
+    function getMineTierName() {
+        const names = {1: "🌱 Начальный", 2: "🪨 Глубинный", 3: "🔥 Магматический", 4: "✨ Легендарный"};
+        return names[gameState.mineTier] || "Шахта";
+    }
+    
+    function updateUI() {
+        document.getElementById('playerLevel').innerText = gameState.level;
+        let nextXPNeeded = getXPNeeded(gameState.level);
+        document.getElementById('playerXP').innerText = gameState.xp;
+        document.getElementById('nextXP').innerText = nextXPNeeded;
+        document.getElementById('coins').innerText = Math.floor(gameState.coins);
+        document.getElementById('energy').innerText = gameState.energy;
+        document.getElementById('maxEnergy').innerText = gameState.maxEnergy;
+        document.getElementById('mineLevelName').innerHTML = `🏔️ ${getMineTierName()}`;
+        let nextUnlock = TIER_UNLOCK[gameState.mineTier+1] || "MAX";
+        if (gameState.mineTier < 4) {
+            document.getElementById('depthReqInfo').innerText = `🔓 След. слой: ур. ${TIER_UNLOCK[gameState.mineTier+1]}`;
+        } else {
+            document.getElementById('depthReqInfo').innerText = `⭐ Максимальные глубины`;
+        }
+        
+        // состояние кнопок улучшений и магазина
+        const pickBtn = document.getElementById('buyPickUpgrade');
+        const energyBtn = document.getElementById('buyEnergyUpgrade');
+        const doubleBtn = document.getElementById('buyDoubleUpgrade');
+        const refillBtn = document.getElementById('refillEnergyBtn');
+        
+        pickBtn.disabled = (gameState.pickUpgrade >= MAX_UPGRADE_LEVEL || gameState.coins < PICK_PRICE);
+        pickBtn.innerText = gameState.pickUpgrade >= MAX_UPGRADE_LEVEL ? "✅ MAX" : `${PICK_PRICE}💰 (+10% цены) ур.${gameState.pickUpgrade}`;
+        
+        energyBtn.disabled = (gameState.energyUpgrade >= MAX_UPGRADE_LEVEL || gameState.coins < ENERGY_CAP_PRICE);
+        energyBtn.innerText = gameState.energyUpgrade >= MAX_UPGRADE_LEVEL ? "✅ MAX" : `${ENERGY_CAP_PRICE}💰 +15 макс.энергии`;
+        
+        doubleBtn.disabled = (gameState.doubleChanceUpgrade >= MAX_UPGRADE_LEVEL || gameState.coins < DOUBLE_PRICE);
+        doubleBtn.innerText = gameState.doubleChanceUpgrade >= MAX_UPGRADE_LEVEL ? "✅ MAX" : `${DOUBLE_PRICE}💰 +10% шанс двойной`;
+        
+        refillBtn.disabled = (gameState.coins < REFILL_PRICE || gameState.energy >= gameState.maxEnergy);
+        refillBtn.innerText = `${REFILL_PRICE}💰 Восстановить ⚡`;
+    }
+    
+    function addLogMessage(msg) {
+        const logDiv = document.getElementById('logPanel');
+        const p = document.createElement('div');
+        p.innerHTML = msg;
+        logDiv.appendChild(p);
+        logDiv.scrollTop = logDiv.scrollHeight;
+        if (logDiv.children.length > 18) {
+            logDiv.removeChild(logDiv.children[0]);
+        }
+    }
+    
+    // Анимация клика миганием клетки
+    function animateCellClick(idx) {
+        const cells = document.querySelectorAll('.cell');
+        if (cells[idx]) {
+            cells[idx].style.transform = 'scale(0.85)';
+            cells[idx].style.filter = 'brightness(1.5)';
+            setTimeout(() => {
+                if (cells[idx]) {
+                    cells[idx].style.transform = '';
+                    cells[idx].style.filter = '';
+                }
+            }, 120);
+        }
+    }
+    
+    // Создание сетки шахты (5x5 = 25 клеток)
+    function buildMineGrid() {
+        const grid = document.getElementById('mineGrid');
+        grid.innerHTML = '';
+        for (let i = 0; i < 25; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            // ставим эмодзи вопроса или кирки
+            cell.innerText = '🪨';
+            cell.setAttribute('data-index', i);
+            cell.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (gameState.energy >= 5) {
+                    mineCell(i);
+                    updateUI();
+                    renderCellIcons(); // обновить иконки после копки для ощущения динамики
+                } else {
+                    addLogMessage("⛔ Нет энергии! Купите восстановление в лавке.");
+                }
+            });
+            grid.appendChild(cell);
+        }
+        renderCellIcons();
+    }
+    
+    // Для разнообразия отображаем случайные иконки на нераскопанных (просто атмосфера)
+    function renderCellIcons() {
+        const cells = document.querySelectorAll('.cell');
+        if (!cells.length) return;
+        for (let i = 0; i < cells.length; i++) {
+            // каждую клетку показываем как камень, эмодзи кирки или знак вопроса. просто декорация
+            const icons = ['🪨', '⛏️', '🪨', '💎', '🔨'];
+            const rand = icons[Math.floor(Math.random() * icons.length)];
+            if (Math.random() > 0.7) cells[i].innerText = rand;
+            else cells[i].innerText = '🪨';
+        }
+    }
+    
+    // Покупки улучшений
+    function buyPickUpgrade() {
+        if (gameState.pickUpgrade >= MAX_UPGRADE_LEVEL) { addLogMessage("Кирка уже максимальная!"); return; }
+        if (gameState.coins >= PICK_PRICE) {
+            gameState.coins -= PICK_PRICE;
+            gameState.pickUpgrade++;
+            addLogMessage(`⛏️ Кирка улучшена до +${gameState.pickUpgrade*10}% ценности руды!`);
+            saveGame();
+            updateUI();
+        } else addLogMessage("Не хватает монет!");
+    }
+    
+    function buyEnergyCapUpgrade() {
+        if (gameState.energyUpgrade >= MAX_UPGRADE_LEVEL) { addLogMessage("Максимальный запас энергии!"); return; }
+        if (gameState.coins >= ENERGY_CAP_PRICE) {
+            gameState.coins -= ENERGY_CAP_PRICE;
+            gameState.energyUpgrade++;
+            let newMax = 100 + (gameState.energyUpgrade * 15);
+            gameState.maxEnergy = newMax;
+            gameState.energy += 10; // бонусное восстановление
+            if (gameState.energy > gameState.maxEnergy) gameState.energy = gameState.maxEnergy;
+            addLogMessage(`🍺 Макс. энергия увеличена до ${gameState.maxEnergy}! +10⚡ сейчас`);
+            saveGame();
+            updateUI();
+        } else addLogMessage("Не хватает монет!");
+    }
+    
+    function buyDoubleUpgrade() {
+        if (gameState.doubleChanceUpgrade >= MAX_UPGRADE_LEVEL) { addLogMessage("Шанс двойной уже максимальный!"); return; }
+        if (gameState.coins >= DOUBLE_PRICE) {
+            gameState.coins -= DOUBLE_PRICE;
+            gameState.doubleChanceUpgrade++;
+            addLogMessage(`🧲 Шанс двойной руды +10% (текущий ${gameState.doubleChanceUpgrade*10}%)`);
+            saveGame();
+            updateUI();
+        } else addLogMessage("Не хватает монет!");
+    }
+    
+    function refillEnergy() {
+        if (gameState.coins < REFILL_PRICE) { addLogMessage("💰 Недостаточно монет для восстановления!"); return; }
+        if (gameState.energy >= gameState.maxEnergy) { addLogMessage("Энергия уже полная!"); return; }
+        gameState.coins -= REFILL_PRICE;
+        gameState.energy = gameState.maxEnergy;
+        addLogMessage(`🔋 Энергия полностью восстановлена до ${gameState.maxEnergy}!`);
+        saveGame();
+        updateUI();
+    }
+    
+    // Инициализация событий и загрузка
+    function initGame() {
+        loadGame();
+        buildMineGrid();
+        updateUI();
+        
+        document.getElementById('buyPickUpgrade').addEventListener('click', buyPickUpgrade);
+        document.getElementById('buyEnergyUpgrade').addEventListener('click', buyEnergyCapUpgrade);
+        document.getElementById('buyDoubleUpgrade').addEventListener('click', buyDoubleUpgrade);
+        document.getElementById('refillEnergyBtn').addEventListener('click', refillEnergy);
+        
+        // периодическое обновление иконок для красоты
+        setInterval(() => {
+            if (document.querySelectorAll('.cell').length) renderCellIcons();
+        }, 4000);
+    }
+    
+    initGame();
+</script>
 </body>
-</html>
+    </html>
